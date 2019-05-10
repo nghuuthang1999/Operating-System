@@ -23,7 +23,6 @@ struct pcb_t * dequeue(struct queue_t * q) {
 		return NULL;
 
 	// If queue not empty
-	struct pcb_t * result = NULL;
 	unsigned int priority = q->proc[0]->priority;
 	unsigned int index = 0;
 	// Find element hold highest priotiry
@@ -33,10 +32,12 @@ struct pcb_t * dequeue(struct queue_t * q) {
 			index = i;
 		}
 	}
-	result = q->proc[index];
-	// Decrease size of queue
-	q->proc[index] =  q->proc[q->size - 1];
-	q->size = q->size - 1;
+	struct pcb_t * result = q->proc[index];
+	
+	for (int i = index + 1; i < q->size; ++i){
+		q->proc[i - 1] = q->proc[i];
+	}
+	q->size--;
 
 	return result;
 }
