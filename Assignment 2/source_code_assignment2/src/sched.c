@@ -18,6 +18,28 @@ void init_scheduler(void) {
 	pthread_mutex_init(&queue_lock, NULL);
 }
 
+struct pcb_t * get_proc(void) {
+	struct pcb_t * proc = NULL;
+	/*TODO: get a process from [ready_queue]. If ready queue
+	 * is empty, push all processes in [run_queue] back to
+	 * [ready_queue] and return the highest priority one.
+	 * Remember to use lock to protect the queue.
+	 * */
+	
+	pthread_mutex_lock(&queue_lock);
+
+	if (empty(&ready_queue)) {
+		// move all process is waiting in run_queue back to ready_queue
+		while (!empty(&run_queue)) {
+			enqueue(&ready_queue, dequeue(&run_queue));
+		}
+	}
+	proc = dequeue(&ready_queue);
+	pthread_mutex_unlock(&queue_lock);
+
+	return proc;
+}
+
 void put_proc(struct pcb_t * proc) {
 	pthread_mutex_lock(&queue_lock);
 	enqueue(&run_queue, proc);
@@ -29,30 +51,3 @@ void add_proc(struct pcb_t * proc) {
 	enqueue(&ready_queue, proc);
 	pthread_mutex_unlock(&queue_lock);	
 }
-
-struct pcb_t * get_proc(void) {
-	struct pcb_t * proc = NULL;
-	/*TODO: get a process from [ready_queue]. If ready queue
-	 * is empty, push all processes in [run_queue] back to
-	 * [ready_queue] and return the highest priority one.
-	 * Remember to use lock to protect the queue.
-	 * */
-	
-	pthread_mutex_lock(&queue_lock);
-	
-	if (empty(&ready_queue)) {
-		// move all process is waiting in run_queue back to ready_queue
-		while (!empty(&run_queue)) {
-			enqueue(&ready_queue, dequeue(&run_queue));
-		}
-	}
-	proc = dequeue(&ready_queue);
-
-	pthread_mutex_unlock(&queue_lock);
-
-	return proc;
-}
-
-
-
-

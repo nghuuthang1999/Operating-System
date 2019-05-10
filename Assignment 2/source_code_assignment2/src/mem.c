@@ -50,9 +50,15 @@ static struct page_table_t * get_page_table(
 	 *
 	 * */
 
+	if (seg_table == NULL)
+		return;
+
 	int i;
 	for (i = 0; i < seg_table->size; i++) {
 		// Enter your code here
+		if (seg_table->table[i].v_index == index){
+			return seg_table->table[i].pages;
+		}		
 	}
 	return NULL;
 
@@ -87,6 +93,7 @@ static int translate(
 			 * to [p_index] field of page_table->table[i] to 
 			 * produce the correct physical address and save it to
 			 * [*physical_addr]  */
+			*physical_addr = (page_table->table[i].v_index << OFFSET_LEN) | offset;
 			return 1;
 		}
 	}
@@ -113,6 +120,20 @@ addr_t alloc_mem(uint32_t size, struct pcb_t * proc) {
 	 * to know whether this page has been used by a process.
 	 * For virtual memory space, check bp (break pointer).
 	 * */
+
+	// Number free page of physical address space
+	uint32_t numOfFreePhysical = 0;
+	for (int i = 0; i < NUM_PAGES; ++i){
+		if (_mem_stat[i].proc == 0) // page is free
+			++numOfFreePhysical;
+	}
+
+	// Free memory in virtual address space and physical address space
+	uint64_t freeMemory = numOfFreePhysical * NUM_PAGES + proc->bp;
+
+	// We could allocate new memory region
+	if (freeMemory >= RAM_SIZE)
+		mem_avail = 1;
 	
 	if (mem_avail) {
 		/* We could allocate new memory region to the process */
@@ -124,6 +145,7 @@ addr_t alloc_mem(uint32_t size, struct pcb_t * proc) {
 		 * 	- Add entries to segment table page tables of [proc]
 		 * 	  to ensure accesses to allocated memory slot is
 		 * 	  valid. */
+		
 	}
 	pthread_mutex_unlock(&mem_lock);
 	return ret_mem;
