@@ -1,0 +1,123 @@
+
+\section{Memory Management}
+
+\subsection{Question - Segmentation with Paging}
+
+\vspace{0.3cm}
+
+\textbf{Câu hỏi}: Ưu điểm và nhược điểm của kết hợp phân trang và phân đoạn ?
+
+\vspace{0.3cm}
+
+\textbf{Ưu điểm của giải thuật}
+
+\begin{itemize}
+	\item Tiết kiệm bộ nhớ, sử dụng bộ nhớ hiệu quả.
+	\item Mang các ưu điểm của giải thuật phân trang:
+	\subitem Đơn giản việc cấp phát vùng nhớ.
+	\subitem Khắc phục được phân mảnh ngoại.
+	\item Giải quyết vấn đề phân mảnh ngoại của giải thuật phân đoạn bằng cách phân trang trong mỗi đoạn.
+\end{itemize}
+
+\vspace{0.3cm}
+
+\textbf{Nhược điểm của giải thuật}
+
+\begin{itemize}
+	\item Phân mảnh nội của giải thuật phân trang vẫn còn.
+\end{itemize}
+
+\subsection{Result - Status of RAM}
+
+\vspace{0.2cm}
+
+\textbf{REQUIREMENT}: Show the status of RAM after each memory allocation and deallocation function call.
+
+\subsubsection*{Test m0}
+\lstinputlisting{files/m0.log}
+
+\subsubsection*{Test m1}
+\lstinputlisting{files/m1.log}
+
+\newpage
+
+\subsection{Implementation}
+\subsubsection{Tìm bảng phân trang từ segment}
+
+Trong assignment này, mỗi địa chỉ được biểu diễn bởi 20 bits, trong đó : 
+
+\begin{table}[!htp]
+	\centering
+	\def\arraystretch{2}
+	\begin{tabular}{lll}
+	\hline
+	\multicolumn{1}{|c|}{5 bit} & \multicolumn{1}{c|}{5 bit} & \multicolumn{1}{c|}{10 bit} \\ \hline
+	Địa chỉ đoạn                & Địa chỉ trang              & Địa chỉ ô nhớ              
+	\end{tabular}
+\end{table}
+
+Bảng phân đoạn $ seg\_table $ là một danh sách gồm các phần tử $ u $ có cấu trúc như sau :
+\begin{itemize}
+	\item $ v\_index $ là 5 bits segment của phần tử $ u $.
+	\item $  page\_table\_t $ là bảng phần trang tương ứng của segment đó.
+\end{itemize}
+
+Chức năng này nhận vào 5 bits segment $ index $ và bảng phân đoạn $ seg\_table $, để tìm ra bảng phân trang $ res $.
+
+Để tìm được $ res $, ta chỉ cần duyệt trên bảng phân đoạn này, phần tử $ u $ nào có $ v\_index $ bằng $ index $ cần tìm, ta trả về $ page\_table $ tương ứng.
+
+\lstinputlisting{files/getpagetable.c}
+
+\newpage
+
+\subsubsection{Ánh xạ địa chỉ ảo thành địa chỉ vật lý}
+
+Do mỗi địa chỉ gồm 20 bits với cách tổ chức như nói ở trên, do đó để tạo được địa chỉ vật lý, ta lấy 10 bits đầu (segment và page) nối với 10 bits cuối (offset). Mỗi $ page\_table\_t $ lưu các phần tử có $ p\_index $ là 10 bits đầu đó. do đó để tạo được địa chỉ vật lý, ta chỉ cần dịch trái 10 bits đó đi 10  bits offset rồi or (|) hai chuỗi này lại.
+
+\lstinputlisting{files/addr.c}
+
+
+\newpage 
+\subsubsection{Cấp phát memory}
+
+\subsubsubsection{Kiểm tra memory sẵn sàng}
+
+Bước này ta kiểm tra xem memory có sẵn sàng cả trên bộ nhớ vật lý và bộ nhớ luận lí hay không.
+
+\begin{itemize}
+	\item Trên vùng vật lý, ta duyệt kiẻm tra số lượng trang còn trống, chưa được process nào sử dụng, nếu đủ số trang cần cấp phát thì vùng vật lý đã sẵn sàng.
+	\item Trên vùng nhớ luận lý, ta kiểm tra dựa trên break point của process, không vượt quá vùng nhớ cho phép.
+\end{itemize}
+
+
+
+\lstinputlisting{files/memavail.c}
+
+\newpage
+\subsubsubsection{Alloc memory}
+
+Các bước thực hiện:
+
+\begin{itemize}
+	\item Duyệt trên vùng nhớ vật lý, tìm các trang rỗi, gán trang này được process sử dụng.
+	\item Tạo biến $ last\_allocated\_page\_index $ để cập nhật giá trị $ next $ dễ dàng hơn.
+	\item Trên vùng nhớ luận lý, dựa trên địa chỉ cấp phát, tính từ địa chỉ bắt đầu và vị trí thứ tự trang cấp phát, ta tìm được các segment, page của nó. Từ đó cập nhật các bảng phân trang, phân đoạn tương ứng.
+\end{itemize}
+
+
+Dưới đây là phần hiện thực chi tiết.
+
+\lstinputlisting{files/memalloc.c}
+
+\newpage
+\subsubsection{Thu hồi memory}
+
+\paragraph{Thu hồi địa chỉ vật lý}
+Chuyển địa chỉ luận lý từ process thành  vật lý, sau đó dựa trên giá trị next của mem, ta cập nhật lại chuỗi địa chỉ tương ứng đó. 
+\lstinputlisting{files/freephys.c}
+
+\subsubsection{Cập nhật địa chỉ luận lý}
+Dựa trên số trang đã xóa trên block của địa chỉ vật lý, ta tìm lần lượt các trang trên địa chỉ luận lý, dựa trên địa chỉ, ta tìm được segment, page tương ứng. Sau đó cập nhật lại bảng phân trang, sau quá trình cập nhật, nếu bảng trống thì xóa bảng này trong segment đi.
+
+\lstinputlisting{files/updv.c}
+\lstinputlisting{files/updbp.c}

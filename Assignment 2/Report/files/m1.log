@@ -1,0 +1,3 @@
+------ MEMORY MANAGEMENT TEST 1 ------------------------------------
+./mem input/proc/m1
+NOTE: Read file output/m1 to verify your result (your implementation should print nothing)
